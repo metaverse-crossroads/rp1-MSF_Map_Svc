@@ -1,0 +1,32 @@
+{
+   "_comment1": "'MVSF' contains Server Config Information for MVSF",
+   "MVSF": {
+      "_comment1": "If your server is using SSL, rename '_SSL' to 'SSL'",
+      "SSL": {
+         "key":   "../temp/ssl/server.key",
+         "cert":  "../temp/ssl/server.cert"
+      },
+
+      "_comment2": "Required for internal use.",
+      "IO": {
+         "bGlobalNotify": true
+      },
+
+      "_comment3": "Server Port & Admin Key",
+      "nPort": "8080",
+      "key":   ""
+   },
+
+   "SQL": {
+      "type": "MOCK",
+      "config": {
+         "connectionLimit":  10,
+         "host":             "",
+         "port":             "",
+         "user":             "",
+         "password":         "",
+         "database":         "",
+         "multipleStatements": true
+      }
+   }
+}
