@@ -5,7 +5,7 @@
    "scripts": {
       "build:win:mssql": "npm run build:win:base && npm run build:win:web && copy .\\svc\\config\\SQL_Server\\*.* dist\\ && cd db\\SQL_Server\\_Create\\ && .\\Create.bat && copy ..\\_Distrib\\MSF_Map.sql ..\\..\\..\\dist\\",
       "build:win:mysql": "npm run build:win:base && npm run build:win:web && copy .\\svc\\config\\MySQL\\*.* dist\\ && cd db\\MySQL\\_Create\\ && .\\Create.bat && copy ..\\_Distrib\\MSF_Map.sql ..\\..\\..\\dist\\",
-      "build:win:web":  "mkdirp dist\\web && xcopy .\\web\\admin dist\\web\\admin /E /I /Y && xcopy .\\web\\public dist\\web\\public /E /I /Y",
+      "build:win:web": "mkdirp dist\\web && xcopy .\\web\\admin dist\\web\\admin /E /I /Y && xcopy .\\web\\public dist\\web\\public /E /I /Y",
       "build:win:base": "mkdirp dist\\Handlers && mkdirp dist\\SSL && copy .\\svc\\handler.json dist\\ && copy .\\svc\\utils.js dist\\ && copy .\\svc\\Handlers\\*.js dist\\Handlers",
       "build:linux:mssql": "npm run build:linux:base && npm run build:linux:web && cp svc/config/SQL_Server/* dist/ && cd db/SQL_Server/_Create && chmod +x ./Create.sh && ./Create.sh && cp ../_Distrib/MSF_Map.sql ../../../dist/",
       "build:linux:mysql": "npm run build:linux:base && npm run build:linux:web && cp svc/config/MySQL/* dist/ && cd db/MySQL/_Create && chmod +x ./Create.sh && ./Create.sh && cp ../_Distrib/MSF_Map.sql ../../../dist/",
@@ -16,6 +16,8 @@
    "author": "",
    "license": "Apache-2.0",
    "dependencies": {
+      "@metaversalcorp/mvsf": "^0.3.37",
+      "@metaversalcorp/mvsql_mysql": "^0.1.7",
       "mkdirp": "^3.0.1"
    }
 }
