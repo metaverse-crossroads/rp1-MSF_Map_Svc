@@ -1,8 +1,6 @@
 class MVSQL_MOCK {
     constructor(config, cbReady) {
         // Simple in-memory storage
-        // Structure: { "procedureName:key": { ...data... } }
-        // Or better: { "RMRoot": { "id": { ... } } }
         this.store = {
             RMRoot: {},
             RMCObject: {},
@@ -10,11 +8,33 @@ class MVSQL_MOCK {
             RMTObject: {}
         };
 
+        this.seed();
+
         console.log("MVSQL_MOCK initialized");
         if (cbReady) {
             // Simulate async connection
             setTimeout(() => cbReady(this, null), 10);
         }
+    }
+
+    seed() {
+        console.log("Seeding Mock Data...");
+        // Replicate INSERT INTO RMRoot from MSF_Map.sql
+        // VALUES ( 52, 1, 70, 0, 32, 'Root', 1 );
+        this.store.RMRoot[1] = {
+             pObjectHead: {
+                 wClass_Parent: 52,
+                 twParentIx: 1,
+                 wClass_Object: 70, // SBM_CLASS_RMROOT
+                 twObjectIx: 1,
+                 twEventIz: 0,
+                 wFlags: 32
+             },
+             Name_wsRMRootId: 'Root',
+             Owner_twRPersonaIx: 1
+        };
+
+        // Add more seeded data here if found in MSF_Map.sql
     }
 
     Compose(sProc, pData, aData, sIPAddress, twRPersonaIx, nType) {
@@ -36,103 +56,96 @@ class MVSQL_MOCK {
     }
 
     async Exec(query) {
-        // Create the hybrid result object (Array + properties)
         const result = [];
-
-        // Default success output
         result.output = { nResult: 0 };
         result.recordsets = [];
 
         if (query.isETL) {
              // Mock ETL behavior
-             // recordsets[0]: Events (empty for now)
-             // recordsets[1]: Status (nCount: 0 means no more events pending)
-
              const events = [];
              const status = [{ nCount: 0 }];
-
              result.recordsets.push(events);
              result.recordsets.push(status);
-
              return result;
         }
 
         console.log(`Mock Executing: ${query.proc}`);
 
-        // Helper to format success return
-        const returnSuccess = () => {
-             result.output.nResult = 0;
-             // Some handlers expect result.recordsets to be present even for updates
-             result.recordsets.push([]);
-             return result;
-        };
-
-        // Helper to return data
-        const returnData = (dataObj) => {
-             result.output.nResult = 0;
-             const row = { Object: JSON.stringify(dataObj) };
-             result.recordsets.push([row]);
-             // Add empty child recordsets if needed (utils.js iterates children)
-             // For now just one is enough for parent
-             return result;
-        };
+        // --- Handlers ---
 
         const proc = query.proc;
         const args = query.pData;
 
-        // --- Handlers ---
+        const returnSuccess = () => {
+             result.output.nResult = 0;
+             result.recordsets.push([]);
+             return result;
+        };
+
+        const returnData = (dataObj) => {
+             result.output.nResult = 0;
+             const row = { Object: JSON.stringify(dataObj) };
+             result.recordsets.push([row]);
+             // Add empty child recordsets if needed (some utils loops expect children)
+             // RMRoot handler usually expects children?
+             // Looking at utils.js: MemResult iterates children from index 1 to recordsets.length
+             // If we just push one recordset, length is 1, loop 1..1 doesn't run. That's fine.
+             return result;
+        };
+
+        // Helper to find ID from args
+        const getArg = (name) => args[name] || 0;
 
         if (proc.startsWith('get_')) {
-            // Extract type from proc name e.g. get_RMRoot -> RMRoot
             let type = null;
             let id = 0;
 
             if (proc.includes('RMRoot')) {
                 type = 'RMRoot';
-                id = args.twRMRootIx || 0;
+                id = getArg('twRMRootIx');
             } else if (proc.includes('RMCObject')) {
                 type = 'RMCObject';
-                id = args.twRMCObjectIx || 0;
+                id = getArg('twRMCObjectIx');
             } else if (proc.includes('RMPObject')) {
                 type = 'RMPObject';
-                id = args.twRMPObjectIx || 0;
+                id = getArg('twRMPObjectIx');
             } else if (proc.includes('RMTObject')) {
                 type = 'RMTObject';
-                id = args.twRMTObjectIx || 0;
+                id = getArg('twRMTObjectIx');
             }
 
             if (type) {
-                // Ensure entry exists
-                if (!this.store[type][id]) {
-                    this.store[type][id] = {
-                        pObjectHead: {
-                            wClass_Object: 0, // Placeholder
-                            twObjectIx: id
-                        },
-                        Name_wsRMRootId: "Mock " + type + " " + id
-                    };
+                if (this.store[type] && this.store[type][id]) {
+                    return returnData(this.store[type][id]);
+                } else {
+                    // Item not found.
+                    // If the service expects a result, we might crash if we return nothing.
+                    // But usually nResult != 0 if not found.
+                    // Let's try returning empty recordset with nResult = -1 or similar?
+                    // Or just return default object if ID is 1 (Root)?
+                    // But we seeded it.
+                    console.log(`Mock: ${type} ${id} not found.`);
+                    // result.output.nResult = -1;
+                    // return result;
+
+                    // Allow creating on the fly for testing? No, stay strict for now.
                 }
-                return returnData(this.store[type][id]);
             }
         }
 
         if (proc.startsWith('set_')) {
-             // Handle Updates
+             // Basic Setter Logic
+             // e.g. set_RMRoot_Name
              if (proc === 'set_RMRoot_Name') {
-                 const id = args.twRMRootIx;
-                 const name = args.Name_wsRMRootId;
-                 if (this.store.RMRoot[id]) {
-                     this.store.RMRoot[id].Name_wsRMRootId = name;
-                 }
-                 return returnSuccess();
+                 const id = getArg('twRMRootIx');
+                 const name = getArg('Name_wsRMRootId');
+                 if (this.store.RMRoot[id]) this.store.RMRoot[id].Name_wsRMRootId = name;
              }
-             // ... handle other setters as needed ...
+             // Add more setters as discovered
 
-             // Default fallback for any other set
              return returnSuccess();
         }
 
-        // Fallback for unknown queries
         return returnSuccess();
     }
 }
