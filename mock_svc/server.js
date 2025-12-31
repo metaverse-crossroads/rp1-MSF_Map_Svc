@@ -64,7 +64,8 @@ class MVSF_Map
       if (Settings.MVSF && Settings.MVSF.SSL) {
           Settings.MVSF.SSL.key = path.resolve(__dirname, Settings.MVSF.SSL.key);
           Settings.MVSF.SSL.cert = path.resolve(__dirname, Settings.MVSF.SSL.cert);
-          console.log("Resolved SSL Key Path:", Settings.MVSF.SSL.key);
+ delete Settings.MVSF.SSL;
+          console.log("Resolved SSL Key Path:", Settings.MVSF.SSL?.key);
       }
 
       this.ReadFromEnv (Settings.SQL.config, [ "host", "port", "user", "password", "database" ]);
