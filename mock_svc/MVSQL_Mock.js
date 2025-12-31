@@ -34,7 +34,19 @@ class MVSQL_MOCK {
              Owner_twRPersonaIx: 1
         };
 
-        // Add more seeded data here if found in MSF_Map.sql
+        // Seed RMPObject 1 (Persona Object?) as it is requested by default client flow
+        this.store.RMPObject[1] = {
+             pObjectHead: {
+                 wClass_Parent: 70, // Child of Root
+                 twParentIx: 1,
+                 wClass_Object: 80, // Guessing Class ID for RMPObject
+                 twObjectIx: 1,
+                 twEventIz: 0,
+                 wFlags: 0
+             },
+             Name_wsRMPObjectId: 'Mock Persona',
+             Owner_twRPersonaIx: 1
+        };
     }
 
     Compose(sProc, pData, aData, sIPAddress, twRPersonaIx, nType) {
@@ -118,17 +130,9 @@ class MVSQL_MOCK {
                 if (this.store[type] && this.store[type][id]) {
                     return returnData(this.store[type][id]);
                 } else {
-                    // Item not found.
-                    // If the service expects a result, we might crash if we return nothing.
-                    // But usually nResult != 0 if not found.
-                    // Let's try returning empty recordset with nResult = -1 or similar?
-                    // Or just return default object if ID is 1 (Root)?
-                    // But we seeded it.
                     console.log(`Mock: ${type} ${id} not found.`);
-                    // result.output.nResult = -1;
-                    // return result;
-
-                    // Allow creating on the fly for testing? No, stay strict for now.
+                    result.output.nResult = -1; // Not found
+                    return result;
                 }
             }
         }
