@@ -212,10 +212,10 @@ class MVSQL_MOCK {
              return result;
         }
 
-        console.log(`Mock Executing: ${query.proc}`);
-
         const proc = query.proc;
         const args = query.pData;
+
+        console.log(JSON.stringify({ at: new Date().toISOString(), ua: 'mock_svc', sys: 'db', sig: 'exec', val: { proc: proc, params: args } }));
 
         const returnSuccess = () => {
              result.output.nResult = 0;
@@ -248,10 +248,10 @@ class MVSQL_MOCK {
                 result.recordsets.push(children);
 
                 result.output.nResult = 0;
-                console.log(`Mock: returning success with ${result.recordsets.length} recordsets.`);
+                // console.log(`Mock: returning success with ${result.recordsets.length} recordsets.`);
                 return result;
             } else {
-                console.log(`Mock: RMPObject ${id} not found.`);
+                console.log(JSON.stringify({ at: new Date().toISOString(), ua: 'mock_svc', sys: 'db', sig: 'error', val: { proc, msg: `RMPObject ${id} not found` } }));
                 result.output.nResult = -1;
                 return result;
             }
@@ -282,10 +282,10 @@ class MVSQL_MOCK {
                 result.recordsets.push(rmpChildren);
 
                 result.output.nResult = 0;
-                console.log(`Mock: returning success with ${result.recordsets.length} recordsets.`);
+                // console.log(`Mock: returning success with ${result.recordsets.length} recordsets.`);
                 return result;
             } else {
-                console.log(`Mock: RMRoot ${id} not found.`);
+                console.log(JSON.stringify({ at: new Date().toISOString(), ua: 'mock_svc', sys: 'db', sig: 'error', val: { proc, msg: `RMRoot ${id} not found` } }));
                 result.output.nResult = -1;
                 return result;
             }

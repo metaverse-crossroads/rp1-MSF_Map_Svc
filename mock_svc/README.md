@@ -1,84 +1,55 @@
-# Mocked Metaverse Server Setup Guide
+# Mocked Metaverse Server
 
-This guide provides instructions for setting up a **fully functional Mock Metaverse Server**. This server replaces the standard database dependency with an in-memory mock driver, allowing you to test integration with the RP1 grid without setting up MySQL or SQL Server.
+This directory contains a self-contained, idempotent environment for running a Mock Metaverse Server. It replaces the standard database with an in-memory mock driver (`MVSQL_Mock.js`), allowing for rapid testing and protocol analysis without external dependencies like MySQL or SQL Server.
 
-## Prerequisites
+## Principles
 
-*   Node.js installed.
-*   Git.
-*   `openssl` (for generating self-signed certificates).
+*   **Self-Contained:** All logic, configuration, and patches required to run the mock environment reside within this `mock_svc` directory (with the exception of the shared `web` assets).
+*   **Idempotent:** The environment allows for "clean room" experimentation. It can be reset and re-instrumented easily using the provided patches.
+*   **Observation:** The primary goal of this mock service is to provide "glass box" visibility into the protocol negotiation between the server and clients (RP1), utilizing structured NDJSON logging.
 
-## Step 1: Install Dependencies
+## Instrumentation & Patches
 
-1.  Navigate to the repository root.
-2.  Install dependencies:
+To enable detailed encounter logging (NDJSON) within the core dependencies (which are normally black boxes), we provide a set of micropatches.
+
+*   **Location:** `mock_svc/patches/`
+*   **Instructions:** See `mock_svc/patches/README.md` for details on how to apply these patches to `node_modules`.
+
+## Setup & Running
+
+### 1. Install Dependencies
+Navigate to the repository root and run:
+```bash
+npm install
+```
+
+### 2. Generate SSL Certificates
+The service requires SSL. Generate self-signed certificates:
+```bash
+bash mock_svc/scripts/generate_certs.sh
+```
+
+### 3. Apply Instrumentation (Optional but Recommended)
+To see detailed traffic logs:
+1.  Backup `node_modules` (optional).
+2.  Apply the patch:
     ```bash
-    npm install
-    ```
-    *Note: You do not need to run any `build:...` or `install:svc` scripts used in the standard tutorial.*
-
-## Step 2: Generate SSL Certificates
-
-The service requires SSL certificates to communicate. We will generate self-signed certificates for testing.
-
-1.  Run the generation script:
-    ```bash
-    bash mock_svc/scripts/generate_certs.sh
-    ```
-    This creates `server.key` and `server.cert` in `temp/ssl/`.
-
-## Step 3: Start the Mock Server
-
-Instead of running from the `dist` folder, we run the mock server directly using a specialized entry point that mimics the production environment.
-
-1.  Start the server:
-    ```bash
-    node mock_svc/server.js
-    ```
-2.  You should see:
-    ```
-    SQL Server READY
-    Server running on port 8080
+    patch -p0 < mock_svc/patches/mvsf_instrumentation.patch
     ```
 
-## Step 4: Configure `sample.msf`
+### 4. Start the Server
+```bash
+node mock_svc/server.js
+```
+You will see `{"at":...}` logs indicating server activity.
 
-The mock server serves the `web/public` directory just like the production server. You must configure the public definition file to point to your local instance.
+### 5. Configure Client
+Edit `web/public/fabric/sample.msf` to point to `localhost:8080`.
 
-1.  Edit `web/public/fabric/sample.msf`.
-2.  Replace `<PUBLIC_DOMAIN>` with `localhost:8080`.
-3.  Replace `<MY_COMPANY_ID>` with your Company ID (or a test ID like `MockCorp`).
+## Directory Structure
 
-    *Example:*
-    ```json
-    {
-       "map": {
-          "namespace": "MockCorp/map",
-          "service": "MVIO",
-          "require": "MVRP_Map",
-          "connect": "secure=true;server=localhost:8080;session=RP1",
-          "bAuth":   false,
-          "RootUrl": "https://localhost:8080",
-          "Scene":   1
-       }
-    }
-    ```
-
-## Step 5: Verification
-
-We have provided a verification script to ensure your mock server is responding correctly and serving the configuration required for RP1 attachment.
-
-1.  With the server running (Step 3), open a new terminal.
-2.  Run the verification script:
-    ```bash
-    node mock_svc/verify_integration.js
-    ```
-3.  Success Output:
-    ```
-    PASS: sample.msf valid.
-    ALL TESTS PASSED.
-    ```
-
-## Step 6: Attach to RP1
-
-You can now use the URL `https://localhost:8080/fabric/sample.msf` to attach your fabric in the RP1 developer portal. The mock server will handle the handshake and simulate a running spatial fabric.
+*   `MVSQL_Mock.js`: The in-memory database driver.
+*   `server.js`: The entry point for the mock service.
+*   `settings.json`: Configuration for the mock environment.
+*   `scripts/`: Helper scripts (e.g., certificate generation).
+*   `patches/`: Micropatches for `node_modules` to enable deep logging.

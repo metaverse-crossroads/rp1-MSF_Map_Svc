@@ -1,0 +1,47 @@
+diff -ruN /tmp/original/node_modules/@metaversalcorp/mvsf/server.js node_modules/@metaversalcorp/mvsf/server.js
+--- /tmp/original/node_modules/@metaversalcorp/mvsf/server.js	2025-12-31 02:43:02.859185977 +0000
++++ node_modules/@metaversalcorp/mvsf/server.js	2025-12-31 02:51:26.258551575 +0000
+@@ -109,7 +109,7 @@
+                if (Settings["IO"] && Settings["IO"].bGlobalNotify)
+                   socket.join ('GLOBALREFRESH');
+
+-               console.log ("Socket connected: " + socket.id + " (" + socket.handshake.address + ")");
++               console.log(JSON.stringify({ at: new Date().toISOString(), ua: 'mock_svc', sys: 'ws', sig: 'conn', val: { id: socket.id, ip: socket.handshake.address } }));
+
+                socket.onAny (this.#Handler_IO.bind (this, socket, io));
+
+@@ -118,6 +118,7 @@
+                   'disconnect',
+                   (reason) =>
+                   {
++                     console.log(JSON.stringify({ at: new Date().toISOString(), ua: 'mock_svc', sys: 'ws', sig: 'disconn', val: { id: socket.id, reason: reason } }));
+                      delete aSession[socket.id];
+                      // Send Notification of Disconnect;
+                   }
+@@ -129,6 +130,11 @@
+
+    LoadHtmlSite (sRootPath, aPath)
+    {
++      app.use ((req, res, next) => {
++         console.log(JSON.stringify({ at: new Date().toISOString(), ua: 'mock_svc', sys: 'http', sig: 'req', val: { method: req.method, url: req.originalUrl, ip: req.ip || req.connection.remoteAddress } }));
++         next ();
++      });
++
+       for (let i=0; i < aPath.length; i++)
+       {
+          app.use
+@@ -213,12 +219,12 @@
+
+       if (this.#aIOEventMap[sEventName])
+       {
+-         console.log ('ActionIO: ' + sEventName, (Session.twRPersonaIx ? Session.twRPersonaIx : '<anonymous>'), pData);
++         console.log(JSON.stringify({ at: new Date().toISOString(), ua: 'mock_svc', sys: 'ws', sig: 'msg', val: { event: sEventName, session: (Session.twRPersonaIx ? Session.twRPersonaIx : '<anonymous>'), data: pData } }));
+          this.#aIOEventMap[sEventName].Exec (false, sEventName, this.#pAuth, Session, pData, this.#SendRSP_IO.bind (this), fn);
+       }
+       else
+       {
+-         console.log ('ERROR Unhandled Event: ' + sEventName, (Session.twRPersonaIx ? Session.twRPersonaIx : '<anonymous>'), pData);
++         console.log(JSON.stringify({ at: new Date().toISOString(), ua: 'mock_svc', sys: 'ws', sig: 'error', val: { msg: 'Unhandled Event', event: sEventName, session: (Session.twRPersonaIx ? Session.twRPersonaIx : '<anonymous>'), data: pData } }));
+           this.#SendRSP_IO (fn, { nResult: -1 });
+       }
+    }
