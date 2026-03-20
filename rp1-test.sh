@@ -35,7 +35,7 @@ echo "Connecting to: $WS_URL"
   
   # Keep pipe open to catch the JSON firehose
   sleep 15
-) | websocat \
+) | websocat -k -t \
+    "$WS_URL" \
     -H "Origin: $ORIGIN" \
-    -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" \
-    "$WS_URL" --text
+    -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
