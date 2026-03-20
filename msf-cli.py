@@ -10,6 +10,9 @@ import ssl
 
 # Set to keep track of requested IDs to avoid duplicate requests
 requested_objects = set()
+initial_class_id = 70
+initial_object_id = 0
+
 
 def fetch_msf_config(url):
     """Fetches the MSF configuration JSON."""
@@ -49,11 +52,32 @@ def on_message(ws, message):
 
     # Socket.IO connect message: 40{"sid":"..."}
     elif message.startswith('40'):
-        print("[<] Socket.IO Connected")
-        print("[>] Requesting RMRoot:update (ID 0)")
-        request_cmd = '420["RMRoot:update",{"twRMRootIx":0}]'
-        ws.send(request_cmd)
-        requested_objects.add("RMRoot:update:0")
+        global initial_class_id, initial_object_id
+
+        class_to_event = {
+            70: 'RMRoot:update',
+            71: 'RMCObject:update',
+            72: 'RMTObject:update',
+            73: 'RMPObject:update'
+        }
+        class_to_param = {
+            70: 'twRMRootIx',
+            71: 'twRMCObjectIx',
+            72: 'twRMTObjectIx',
+            73: 'twRMPObjectIx'
+        }
+
+        event_name = class_to_event.get(initial_class_id)
+        param_name = class_to_param.get(initial_class_id, 'twID')
+
+        if event_name:
+            print(f"[<] Socket.IO Connected")
+            print(f"[>] Requesting {event_name} (ID {initial_object_id})")
+            request_cmd = f'420["{event_name}",{{"{param_name}":{initial_object_id}}}]'
+            ws.send(request_cmd)
+            requested_objects.add(f"{event_name}:{initial_object_id}")
+        else:
+            print("[!] Unknown initial class ID.")
 
     # Engine.IO ping message: 2
     elif message == '2':
@@ -96,12 +120,7 @@ def on_message(ws, message):
                     if isinstance(first_item, dict) and first_item.get('nResult') == -2:
                         print(f"[!] Ack indicates error: {json.dumps(first_item)}")
 
-                        # Fallback heuristic: If RMRoot 0 is invalid, try RMTObject 1
-                        if ack_id == "0":
-                            print("[>] Fallback: RMRoot:update failed, trying RMTObject:update (ID 1)")
-                            fallback_cmd = '421["RMTObject:update",{"twRMTObjectIx":1}]'
-                            ws.send(fallback_cmd)
-                            requested_objects.add("RMTObject:update:1")
+                        # Note: Could add fallback logic here if needed, but we rely on config.
 
                 # Also try traversal on ack payloads, as they might contain children
                 traverse_children(ws, payload)
@@ -206,6 +225,13 @@ def main():
 
     # 2. Extract WebSocket URL
     ws_url = get_websocket_url(msf_config)
+
+    global initial_class_id, initial_object_id
+    try:
+        initial_class_id = msf_config.get('map', {}).get('wClass', 70)
+        initial_object_id = msf_config.get('map', {}).get('twObjectIx', 0)
+    except AttributeError:
+        pass
     print(f"[*] Connecting to WebSocket: {ws_url}")
     print(f"[*] Origin: {origin}")
 
